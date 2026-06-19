@@ -1,8 +1,8 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
 const qrcode = require('qrcode-terminal');
+const fs = require('fs'); // Modul zum Lesen von Dateien
 
-// Dein gewünschtes Präfix
 const PREFIX = '€'; 
 
 async function connectToWhatsApp() {
@@ -23,7 +23,7 @@ async function connectToWhatsApp() {
                 : true;
             if (shouldReconnect) connectToWhatsApp();
         } else if (connection === 'open') {
-            console.log('Bot ist online und bereit!');
+            console.log('Bot ist online und einsatzbereit!');
         }
     });
 
@@ -44,33 +44,58 @@ async function connectToWhatsApp() {
         const args = text.slice(PREFIX.length).trim().split(/ +/);
         const command = args.shift().toLowerCase();
 
-        // ---- BEFEHLS-LOGIK ----
+        // ==================== BEFEHLS-LOGIK ====================
         
-        // 1. Hilfe-Befehl
-        if (command === 'help' || command === 'hilfe') {
-            const menu = `*🤖 BOT MENÜ* \n\n` +
-                         `${PREFIX}ping - Testet die Antwortzeit\n` +
-                         `${PREFIX}jid @Nutzer - Zeigt die JID eines Nutzers an\n` +
-                         `${PREFIX}runtime - Zeigt die Laufzeit des Bots`;
-            await sock.sendMessage(from, { text: menu });
+        // 1. Das dynamische Menü (lädt aus commands.json)
+        if (command === 'menu' || command === 'hilfe' || command === 'help') {
+            try {
+                // commands.json einlesen und in ein JavaScript-Objekt umwandeln
+                const commandsData = JSON.parse(fs.readFileSync('./commands.json', 'utf8'));
+                
+                let menuText = `*⚙️ POISINIOUSLY BOT MENÜ* ⚙️\n\n` +
+                               `Hier ist eine Übersicht aller verfügbaren Befehle. Nutze das Präfix *${PREFIX}* vor jedem Befehl.\n\n`;
+
+                // Schleife durch alle Befehle in der JSON-Datei
+                for (const cmd in commandsData) {
+                    const info = commandsData[cmd];
+                    menuText += `• \`${PREFIX}${info.usage}\` - ${info.description}\n`;
+                }
+
+                await sock.sendMessage(from, { text: menuText });
+            } catch (error) {
+                console.error("Fehler beim Laden der commands.json:", error);
+                await sock.sendMessage(from, { text: '❌ Fehler: Die Befehlsliste konnte nicht geladen werden.' });
+            }
         }
 
-        // 2. Ping-Befehl
+       // 2. Ping-Befehl mit echter Zeitmessung
         if (command === 'ping') {
-            await sock.sendMessage(from, { text: '🏓 Pong!' });
-        }
+            const timestamp = Date.now(); // Aktuelle Zeit in Millisekunden speichern
+            
+            // Erste Nachricht senden
+            const pingMsg = await sock.sendMessage(from, { text: '🏓 *Pong...*' });
+            
+            // Differenz berechnen (aktuelle Zeit minus Startzeit)
+            const latency = Date.now() - timestamp; 
 
-        // 3. JID-Befehl (Auslesen der WhatsApp-ID)
+            // Die gesendete Nachricht mit dem echten Ping-Wert aktualisieren (editieren)
+            await sock.sendMessage(from, { 
+                text: `🏓 *Pong!*\n\n• *Verzögerung:* \`${latency}ms\``,
+                edit: pingMsg.key
+            });
+        }}
+
+        // 3. JID-Befehl (User-ID auslesen)
         if (command === 'jid') {
             const mentioned = msg.message.extendedTextMessage?.contextInfo?.mentionedJid;
 
             if (!mentioned || mentioned.length === 0) {
-                await sock.sendMessage(from, { text: `Bitte markiere einen Nutzer. Beispiel: ${PREFIX}jid @Nutzer` });
+                await sock.sendMessage(from, { text: `⚠️ Bitte markiere einen Nutzer!\nBeispiel: *${PREFIX}jid @Nutzer*` });
                 return;
             }
 
             const targetJid = mentioned[0];
-            const responseText = `🆔 *JID Information:*\n\n• *Benutzer:* @${targetJid.split('@')[0]}\n• *JID:* \`${targetJid}\``;
+            const responseText = `🆔 *User-JID extrahiert:*\n\n• *Benutzer:* @${targetJid.split('@')[0]}\n• *ID:* \`${targetJid}\``;
 
             await sock.sendMessage(from, { 
                 text: responseText,
@@ -78,15 +103,28 @@ async function connectToWhatsApp() {
             });
         }
 
-        // 4. Runtime-Befehl
+        // 4. GJID-Befehl (Gruppen-ID auslesen)
+        if (command === 'gjid') {
+            if (!from.endsWith('@g.us')) {
+                await sock.sendMessage(from, { text: '❌ Dieser Befehl kann nur innerhalb von Gruppen-Chats verwendet werden.' });
+                return;
+            }
+
+            const responseText = `👥 *Gruppen-JID extrahiert:*\n\n• *ID:* \`${from}\``;
+            await sock.sendMessage(from, { text: responseText });
+        }
+
+        // 5. Runtime-Befehl (Laufzeit)
         if (command === 'runtime') {
             const uptime = process.uptime();
             const hours = Math.floor(uptime / 3600);
             const minutes = Math.floor((uptime % 3600) / 60);
             const seconds = Math.floor(uptime % 60);
-            await sock.sendMessage(from, { text: `⏱️ *Laufzeit:* ${hours}h ${minutes}m ${seconds}s` });
+            
+            await sock.sendMessage(from, { text: `⏱️ *Aktuelle Bot-Laufzeit:* ${hours}h ${minutes}m ${seconds}s` });
         }
     });
 }
 
 connectToWhatsApp();
+        
