@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, getDevice } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs');
@@ -337,6 +337,54 @@ async function finalizeAnalysis(delays, from, targetJid, sock, incomplete = fals
                `• *Schwankung (Min/Max):* \`${min} ms\` bis \`${max} ms\`\n\n` +
                `• *Einschätzung:* ${verdict}`,
         mentions: [targetJid]
+        // 10. Native Geräte-Erkennung (Zitieren-Methode)
+        if (command === 'device') {
+            // Wir prüfen, ob auf eine Nachricht geantwortet wurde
+            const quotedMsgId = msg.message.extendedTextMessage?.contextInfo?.stanzaId;
+            const targetJid = msg.message.extendedTextMessage?.contextInfo?.participant;
+
+            if (!quotedMsgId) {
+                await sock.sendMessage(from, { text: `⚠️ Bitte antworte (zitiere) auf eine Nachricht der Person mit *${PREFIX}device*, um das Gerät zu ermitteln!` });
+                return;
+            }
+
+            try {
+                // Baileys native Funktion liest den Hash der Message-ID aus
+                const deviceType = getDevice(quotedMsgId);
+                
+                let deviceName = "❓ Unbekanntes Gerät";
+                let icon = "📱";
+
+                // Auswertung des Fingerabdrucks
+                if (deviceType === 'android') { 
+                    deviceName = "Android Smartphone"; 
+                    icon = "🤖"; 
+                } else if (deviceType === 'web') { 
+                    deviceName = "WhatsApp Web / Desktop"; 
+                    icon = "💻"; 
+                } else if (deviceType === 'ios') { 
+                    deviceName = "Apple iOS (iPhone)"; 
+                    icon = "🍎"; 
+                } else if (deviceType === 'baileys' || deviceType === 'bot') { 
+                    deviceName = "Bot / Skript (Baileys o.ä.)"; 
+                    icon = "⚙️"; 
+                }
+
+                const replyText = `${icon} *NATIVE GERÄTE-ANALYSE* ${icon}\n\n` +
+                                  `• *Nutzer:* @${targetJid.split('@')[0]}\n` +
+                                  `• *Erkanntes Gerät:* \`${deviceName}\`\n` +
+                                  `• *System-Typ:* \`${deviceType}\``;
+
+                await sock.sendMessage(from, { 
+                    text: replyText, 
+                    mentions: [targetJid] 
+                });
+
+            } catch (error) {
+                console.error("Fehler bei der Geräte-Erkennung:", error);
+                await sock.sendMessage(from, { text: '❌ Fehler beim Auslesen der Metadaten.' });
+            }
+        }
     });
 }
 
