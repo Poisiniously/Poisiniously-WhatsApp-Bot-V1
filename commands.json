@@ -1,43 +1,13 @@
 {
-  "menu": {
-    "usage": "menu",
-    "description": "Zeigt diese Befehlsübersicht an."
-  },
-  "ping": {
-    "usage": "ping",
-    "description": "Überprüft den Ping."
-  },
-  "runtime": {
-    "usage": "runtime",
-    "description": "Zeigt die aktuelle Online-Zeit des Bots an."
-  },
-  "jid": {
-    "usage": "jid @Nutzer",
-    "description": "Gibt die eindeutige WhatsApp-JID des markierten Nutzers aus."
-  },
-  "gjid": {
-    "usage": "gjid",
-    "description": "Gibt die Gruppen-JID des aktuellen Gruppen-Chats aus (nur in Gruppen)."
-  },
-  "hidetag": {
-    "usage": "hidetag [Nachricht]",
-    "description": "Markiert alle Gruppenmitglieder mit einer Nachricht."
-  },
-  "sticker": {
-  "usage": "sticker",
-  "description": "Erstellt einen Sticker aus einem Bild (anhängen oder antworten)."
-  },
-  "profile": {
-    "usage": "profile @Nutzer",
-    "description": "Zeigt Informationen über markierte Personen."
-  },
-  "checkdevice": {
-    "usage": "menu",
-    "description": "*Experimentell*:Versucht das Gerät der getaggten Person zu identifizieren."
-  },
-  "device": {
-    "usage": "menu",
-    "description": "*Experimentell*:Versucht das Gerät der getaggten Person zu identifizieren."
-  }
+  "menu": {"usage": "menu","description": "Zeigt diese Befehlsübersicht an."},
+  "ping": {"usage": "ping","description": "Überprüft den Ping."},
+  "runtime": {"usage": "runtime","description": "Zeigt die aktuelle Online-Zeit des Bots an."},
+  "jid": {"usage": "jid @Nutzer","description": "Gibt die eindeutige WhatsApp-JID des markierten Nutzers aus."},
+  "gjid": {"usage": "gjid","description": "Gibt die Gruppen-JID des aktuellen Gruppen-Chats aus (nur in Gruppen)."},
+  "hidetag": {"usage": "hidetag [Nachricht]","description": "Markiert alle Gruppenmitglieder mit einer Nachricht."},
+  "sticker": {"usage": "sticker","description": "Erstellt einen Sticker aus einem Bild (anhängen oder antworten)."},
+  "profile": {"usage": "profile @Nutzer","description": "Zeigt Informationen über markierte Personen."},
+  "checkdevice": {"usage": "checkdevice","description": "*Experimentell*:Versucht das Gerät der getaggten Person zu identifizieren."},
+  "device": {"usage": "device","description": "*Experimentell*:Versucht das Gerät der getaggten Person zu identifizieren."}
+  "bancheck": {"usage": "bancheck [Nummer mit Ländervorwahl]", "description": "Prüft, ob eine Nummer von WhatsApp gebannt wurde." }
 }
-
