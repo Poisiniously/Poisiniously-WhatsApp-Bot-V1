@@ -1,4 +1,4 @@
-äconst { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs'); // Modul zum Lesen von Dateien
@@ -359,6 +359,55 @@ async function connectToWhatsApp() {
             } catch (error) {
                 console.error("Fehler beim Abrufen des Profils:", error);
                 await sock.sendMessage(from, { text: '❌ Fehler beim Laden der Profil-Informationen.' });
+            }
+        }
+        // Experimenteller Befehl: Latenz-Messung für Geräte-Tendenzen
+        if (command === 'checkdevice') {
+            const mentioned = msg.message.extendedTextMessage?.contextInfo?.mentionedJid;
+            const targetJid = (mentioned && mentioned.length > 0) ? mentioned[0] : msg.key.participant || msg.key.remoteJid;
+
+            // 1. Eine unsichtbare/leere Nachricht an das Ziel senden
+            const sentMsg = await sock.sendMessage(targetJid, { text: 'Checking connection...' });
+            const sendTime = Date.now(); // Zeitstempel beim Absenden
+
+            // Wir erstellen ein temporäres Event, um auf die Rückmeldung des Servers für genau DIESE Nachricht zu warten
+            const receiptListener = async (receipts) => {
+                for (const receipt of receipts) {
+                    // Wir prüfen, ob die Quittung von unserem Ziel kommt und zu unserer Nachricht gehört
+                    if (receipt.jid === targetJid && receipt.ack === 2) { // ack 2 bedeutet: Auf dem Gerät zugestellt
+                        const receiveTime = Date.now();
+                        const delay = receiveTime - sendTime; // Differenz in Millisekunden
+
+                        // Listener sofort wieder entfernen, damit er nicht weiterläuft
+                        sock.ev.off('messages.update', receiptListener);
+
+                        // Auswertung der Latenz
+                        let verdict = "📱 Wahrscheinlich Smartphone (Direkte Antwort)";
+                        if (delay > 400) {
+                            verdict = "💻 Tendenz zu WhatsApp Web / PC oder schlechtem Empfang";
+                        }
+
+                        // Ergebnis in den ursprünglichen Chat zurücksenden
+                        await sock.sendMessage(from, { 
+                            text: `⏱️ *Latenz-Analyse für* @${targetJid.split('@')[0]}:\n\n` +
+                                   `• *Antwortzeit:* \`${delay} ms\`\n` +
+                                   `• *Auswertung:* ${verdict}`,
+                            mentions: [targetJid]
+                        });
+                        return;
+                    }
+                }
+            };
+
+            // Event-Listener aktivieren
+            sock.ev.on('messages.update', receiptListener);
+
+            // 2. Sofort Reaktionen hinterhersenden, um die Leitung zu "fordern"
+            const emojis = ['⏳', '⚡', '🤖'];
+            for (const emoji of emojis) {
+                await sock.sendMessage(targetJid, {
+                    react: { text: emoji, key: sentMsg.key }
+                });
             }
         }
     });
