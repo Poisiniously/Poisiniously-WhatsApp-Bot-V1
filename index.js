@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+äconst { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
 const qrcode = require('qrcode-terminal');
 const fs = require('fs'); // Modul zum Lesen von Dateien
@@ -122,6 +122,40 @@ async function connectToWhatsApp() {
             const seconds = Math.floor(uptime % 60);
             
             await sock.sendMessage(from, { text: `⏱️ *Aktuelle Bot-Laufzeit:* ${hours}h ${minutes}m ${seconds}s` });
+        }
+        // 6. Hidetag-Befehl (Heimliches Erwähnen aller Gruppenmitglieder)
+        if (command === 'hidetag') {
+            // 1. Prüfen, ob der Befehl in einer Gruppe genutzt wurde
+            if (!from.endsWith('@g.us')) {
+                await sock.sendMessage(from, { text: '❌ Dieser Befehl kann nur in Gruppen verwendet werden!' });
+                return;
+            }
+
+            // 2. Den Text herausfiltern, den der Nutzer mitschicken will
+            const messageText = args.join(' ');
+            if (!messageText) {
+                await sock.sendMessage(from, { text: `⚠️ Bitte gib eine Nachricht an!\nBeispiel: *${PREFIX}hidetag Hallo zusammen!*` });
+                return;
+            }
+
+            try {
+                // 3. Gruppen-Metadaten vom Server abrufen (um die Mitglieder-Liste zu bekommen)
+                const groupMetadata = await sock.groupMetadata(from);
+                const participants = groupMetadata.participants;
+
+                // 4. Ein Array mit den JIDs aller Mitglieder erstellen
+                const jids = participants.map(p => p.id);
+
+                // 5. Die Nachricht senden und das JID-Array im 'mentions'-Feld mitschicken
+                await sock.sendMessage(from, { 
+                    text: messageText, 
+                    mentions: jids 
+                });
+
+            } catch (error) {
+                console.error("Fehler beim Hidetag:", error);
+                await sock.sendMessage(from, { text: '❌ Fehler beim Abrufen der Gruppenmitglieder. Ist der Bot in der Gruppe?' });
+            }
         }
     });
 }
