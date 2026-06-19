@@ -156,6 +156,132 @@ async function connectToWhatsApp() {
                 console.error("Fehler beim Hidetag:", error);
                 await sock.sendMessage(from, { text: '❌ Fehler beim Abrufen der Gruppenmitglieder. Ist der Bot in der Gruppe?' });
             }
+            const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const { Boom } = require('@hapi/boom');
+const qrcode = require('qrcode-terminal');
+const fs = require('fs');
+// const sharp = require('sharp'); // REMOVE THE COMMENT TO ACTIVATE THIS! You need to 'npm install sharp' first.
+
+// The designated command prefix
+const PREFIX = '€'; 
+
+async function connectToWhatsApp() {
+    const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
+
+    const sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: true
+    });
+
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect, qr } = update;
+        if (qr) qrcode.generate(qr, { small: true });
+        
+        if (connection === 'close') {
+            const shouldReconnect = (lastDisconnect.error instanceof Boom) 
+                ? lastDisconnect.error.output.statusCode !== DisconnectReason.loggedOut 
+                : true;
+            if (shouldReconnect) connectToWhatsApp();
+        } else if (connection === 'open') {
+            console.log('Bot is online and ready!');
+        }
+    });
+
+    sock.ev.on('creds.update', saveCreds);
+
+    sock.ev.on('messages.upsert', async m => {
+        const msg = m.messages[0];
+        if (!msg.message || msg.key.fromMe) return;
+
+        const from = msg.key.remoteJid;
+        
+        const text = msg.message.conversation || 
+                     msg.message.extendedTextMessage?.text || 
+                     msg.message.imageMessage?.caption || "";
+
+        if (!text.startsWith(PREFIX)) return;
+
+        const args = text.slice(PREFIX.length).trim().split(/ +/);
+        const command = args.shift().toLowerCase();
+
+        // ==================== BEFEHLS-LOGIK ====================
+        
+        // 1. The Dynamic Menu (loads from commands.json)
+        if (command === 'menu' || command === 'hilfe' || command === 'help') {
+            // (Keep your existing Menu logic here, adding the 'sticker' entry manually for now)
+            try {
+                const commandsData = JSON.parse(fs.readFileSync('./commands.json', 'utf8'));
+                let menuText = `*⚙️ POISINIOUSLY BOT MENÜ* ⚙️\n\n` +
+                               `Hier ist eine Übersicht aller verfügbaren Befehle. Nutze das Präfix *${PREFIX}* vor jedem Befehl.\n\n`;
+                for (const cmd in commandsData) {
+                    const info = commandsData[cmd];
+                    menuText += `• \`${PREFIX}${info.usage}\` - ${info.description}\n`;
+                }
+                await sock.sendMessage(from, { text: menuText });
+            } catch (error) {
+                console.error("Error loading commands.json:", error);
+                await sock.sendMessage(from, { text: '❌ Fehler: Die Befehlsliste konnte nicht geladen werden.' });
+            }
+        }
+
+        // 2. STICKER-MAKER
+        if (command === 'sticker' || command === 's' || command === 'stiker') {
+            // Check if activated
+            // if (typeof sharp === 'undefined') {
+            //     return await sock.sendMessage(from, { text: '⚠️ Die Sticker-Funktion ist serverseitig noch nicht konfiguriert (installiere "sharp").' });
+            // }
+
+            try {
+                // a. Detect if user is replying (quoted) to an image or has one attached to the message
+                const isReplyImage = !!msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
+                const isAttachedImage = !!msg.message.imageMessage;
+                let targetMessage = null;
+
+                if (isAttachedImage) {
+                    targetMessage = msg;
+                } else if (isReplyImage) {
+                    targetMessage = msg.message.extendedTextMessage.contextInfo;
+                } else {
+                    return await sock.sendMessage(from, { text: `⚠️ Bitte sende ein Bild mit ${PREFIX}sticker oder antworte auf ein Bild!` });
+                }
+
+                // b. Download the original image content (as a buffer)
+                const imageContent = isReplyImage 
+                    ? targetMessage.quotedMessage.imageMessage 
+                    : targetMessage.imageMessage;
+                
+                const buffer = await sock.downloadMediaMessage({ 
+                    message: { imageMessage: imageContent },
+                    key: targetMessage.key
+                });
+
+                // c. Process the image into a clean, optimized sticker (WEBP format)
+                // d. Note: Activation required below.
+                // const stickerBuffer = await sharp(buffer)
+                //     .resize(512, 512, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }) // Square, transparent padding
+                //     .webp({ quality: 80 }) // Efficient compression
+                //     .toBuffer();
+
+                // e. Send the sticker (with empty/invisible title)
+                // d. To activate, uncomment these three lines below and comment out lines above.
+                // await sock.sendMessage(from, { 
+                //     sticker: stickerBuffer,
+                //     packname: '\u200B', // Invisible Unicode character (Clean title)
+                //     author: '\u200B' // Invisible Unicode character (Clean author)
+                // });
+
+                // (Placeholder for inactivated state)
+                await sock.sendMessage(from, { text: '🛠️ Sticker-Funktion erkannt! Um sie zu aktivieren, muss der Code in index.js angepasst und die Bibliothek "sharp" installiert werden.' });
+
+            } catch (error) {
+                console.error("Sticker process error:", error);
+                await sock.sendMessage(from, { text: '❌ Ein Fehler ist bei der Sticker-Erstellung aufgetreten.' });
+            }
+        }
+    });
+}
+
+connectToWhatsApp();
         }
     });
 }
