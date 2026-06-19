@@ -18,18 +18,22 @@
   "gjid": {
     "usage": "gjid",
     "description": "Gibt die Gruppen-JID des aktuellen Gruppen-Chats aus (nur in Gruppen)."
-  }
+  },
   "hidetag": {
     "usage": "hidetag [Nachricht]",
     "description": "Markiert alle Gruppenmitglieder mit einer Nachricht."
-  }
+  },
   "sticker": {
   "usage": "sticker",
   "description": "Erstellt einen Sticker aus einem Bild (anhängen oder antworten)."
-  }
+  },
   "profile": {
     "usage": "profile @Nutzer",
     "description": "Zeigt Informationen über markierte Personen."
-  }
+  },
+  "checkdevice": {
+    "usage": "menu",
+    "description": "*Experimentell*:Versucht das Gerät der getaggten Person zu identifizieren."
+  },
 }
 
