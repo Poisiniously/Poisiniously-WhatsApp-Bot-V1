@@ -5,7 +5,7 @@
   },
   "ping": {
     "usage": "ping",
-    "description": "Überprüft, ob der Bot aktiv reagiert."
+    "description": "Überprüft den Ping."
   },
   "runtime": {
     "usage": "runtime",
