@@ -23,4 +23,8 @@
     "usage": "hidetag [Nachricht]",
     "description": "Markiert alle Gruppenmitglieder mit einer Nachricht."
   }
-}
+  "sticker": {
+  "usage": "sticker",
+  "description": "Erstellt einen Sticker aus einem Bild (anhängen oder antworten)."
+  }
+
