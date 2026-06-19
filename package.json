@@ -11,5 +11,6 @@
     "@whiskeysockets/baileys": "^6.6.0",
     "qrcode-terminal": "^0.12.0"
     "sharp": "^0.33.4"
+    "libphonenumber-js": "^1.11.4"
   }
 }
