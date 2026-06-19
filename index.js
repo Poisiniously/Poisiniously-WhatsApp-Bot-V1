@@ -278,23 +278,21 @@ async function connectToWhatsApp() {
                 await sock.sendMessage(from, { text: '❌ Ein Fehler ist bei der Sticker-Erstellung aufgetreten.' });
             }
         }
-        // 7. Profile-Befehl (Profil-Infos und Bild anzeigen)
+        // 7. Erweiterter Profile-Befehl (Inklusive Ländervorwahl-Erkennung)
         if (command === 'profile' || command === 'profil') {
-            // Wenn jemand markiert ist, nimm den ersten Erwähnten, ansonsten den Absender selbst
             const mentioned = msg.message.extendedTextMessage?.contextInfo?.mentionedJid;
             const targetJid = (mentioned && mentioned.length > 0) ? mentioned[0] : msg.key.participant || msg.key.remoteJid;
 
             try {
-                // 1. Profilbild-URL vom WhatsApp-Server abrufen (gibt 'preview' oder 'image' für volle Auflösung)
+                // 1. Profilbild-URL abrufen
                 let profilePicUrl;
                 try {
                     profilePicUrl = await sock.profilePictureUrl(targetJid, 'image');
                 } catch {
-                    // Falls der Nutzer kein Profilbild hat oder die Privatsphäre-Einstellungen es verbieten
                     profilePicUrl = null;
                 }
 
-                // 2. Prüfen, ob wir in einer Gruppe sind und ob der Nutzer Admin ist
+                // 2. Admin-Status prüfen
                 let adminStatus = "❌ Kein Admin";
                 if (from.endsWith('@g.us')) {
                     const groupMetadata = await sock.groupMetadata(from);
@@ -309,14 +307,30 @@ async function connectToWhatsApp() {
                     adminStatus = "💬 Privater Chat";
                 }
 
-                // 3. Text formatieren
+                // 3. Ländervorwahl aus der JID extrahieren und analysieren
                 const cleanNumber = targetJid.split('@')[0];
+                let country = "🌍 Unbekanntes Land";
+                
+                if (cleanNumber.startsWith('49')) {
+                    country = "🇩🇪 Deutschland (+49)";
+                } else if (cleanNumber.startsWith('43')) {
+                    country = "🇦🇹 Österreich (+43)";
+                } else if (cleanNumber.startsWith('41')) {
+                    country = "🇨🇭 Schweiz (+41)";
+                } else {
+                    // Fallback für andere Länder: Zeigt zumindest die ersten 2–3 Ziffern als Vorwahl an
+                    const estimatedPrefix = cleanNumber.substring(0, 3);
+                    country = "📞 Internationale Vorwahl (+" + estimatedPrefix + "...)";
+                }
+
+                // 4. Text formatieren
                 const infoText = `👤 *NUTZER-PROFIL:*\n\n` +
                                  `• *Nummer:* @${cleanNumber}\n` +
+                                 `• *Herkunft:* ${country}\n` +
                                  `• *Status:* ${adminStatus}\n` +
                                  `• *JID:* \`${targetJid}\``;
 
-                // 4. Senden: Wenn ein Bild existiert, schicke es mit dem Text als Beschreibung. Ansonsten nur den Text.
+                // 5. Nachricht senden
                 if (profilePicUrl) {
                     await sock.sendMessage(from, { 
                         image: { url: profilePicUrl }, 
@@ -325,13 +339,13 @@ async function connectToWhatsApp() {
                     });
                 } else {
                     await sock.sendMessage(from, { 
-                        text: `🖼️ _Kein Profilbild verfügbar (Privatsphäre-Einstellung)_\n\n` + infoText,
+                        text: `🖼️ _Kein Profilbild verfügbar_\n\n` + infoText,
                         mentions: [targetJid]
                     });
                 }
 
             } catch (error) {
-                console.error("Fehler beim Abrufen des Profils:", error);
+                console.error("Fehler beim Abrufen des erweiterten Profils:", error);
                 await sock.sendMessage(from, { text: '❌ Fehler beim Laden der Profil-Informationen.' });
             }
         }
