@@ -278,10 +278,62 @@ async function connectToWhatsApp() {
                 await sock.sendMessage(from, { text: '❌ Ein Fehler ist bei der Sticker-Erstellung aufgetreten.' });
             }
         }
-    });
-}
+        // 7. Profile-Befehl (Profil-Infos und Bild anzeigen)
+        if (command === 'profile' || command === 'profil') {
+            // Wenn jemand markiert ist, nimm den ersten Erwähnten, ansonsten den Absender selbst
+            const mentioned = msg.message.extendedTextMessage?.contextInfo?.mentionedJid;
+            const targetJid = (mentioned && mentioned.length > 0) ? mentioned[0] : msg.key.participant || msg.key.remoteJid;
 
-connectToWhatsApp();
+            try {
+                // 1. Profilbild-URL vom WhatsApp-Server abrufen (gibt 'preview' oder 'image' für volle Auflösung)
+                let profilePicUrl;
+                try {
+                    profilePicUrl = await sock.profilePictureUrl(targetJid, 'image');
+                } catch {
+                    // Falls der Nutzer kein Profilbild hat oder die Privatsphäre-Einstellungen es verbieten
+                    profilePicUrl = null;
+                }
+
+                // 2. Prüfen, ob wir in einer Gruppe sind und ob der Nutzer Admin ist
+                let adminStatus = "❌ Kein Admin";
+                if (from.endsWith('@g.us')) {
+                    const groupMetadata = await sock.groupMetadata(from);
+                    const isTargetAdmin = groupMetadata.participants.find(p => p.id === targetJid)?.admin;
+                    
+                    if (isTargetAdmin === 'admin') {
+                        adminStatus = "👑 Gruppen-Admin";
+                    } else if (isTargetAdmin === 'superadmin') {
+                        adminStatus = "🛡️ Gruppen-Ersteller (Superadmin)";
+                    }
+                } else {
+                    adminStatus = "💬 Privater Chat";
+                }
+
+                // 3. Text formatieren
+                const cleanNumber = targetJid.split('@')[0];
+                const infoText = `👤 *NUTZER-PROFIL:*\n\n` +
+                                 `• *Nummer:* @${cleanNumber}\n` +
+                                 `• *Status:* ${adminStatus}\n` +
+                                 `• *JID:* \`${targetJid}\``;
+
+                // 4. Senden: Wenn ein Bild existiert, schicke es mit dem Text als Beschreibung. Ansonsten nur den Text.
+                if (profilePicUrl) {
+                    await sock.sendMessage(from, { 
+                        image: { url: profilePicUrl }, 
+                        caption: infoText,
+                        mentions: [targetJid]
+                    });
+                } else {
+                    await sock.sendMessage(from, { 
+                        text: `🖼️ _Kein Profilbild verfügbar (Privatsphäre-Einstellung)_\n\n` + infoText,
+                        mentions: [targetJid]
+                    });
+                }
+
+            } catch (error) {
+                console.error("Fehler beim Abrufen des Profils:", error);
+                await sock.sendMessage(from, { text: '❌ Fehler beim Laden der Profil-Informationen.' });
+            }
         }
     });
 }
