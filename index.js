@@ -447,6 +447,33 @@ async function finalizeAnalysis(delays, from, targetJid, sock, incomplete = fals
                 await sock.sendMessage(from, { text: '❌ Fehler bei der Server-Abfrage. Bitte stelle sicher, dass die Nummer das richtige Format hat (z.B. 49176...).' });
             }
         }
+        // 14. Profilbild Downloader
+        if (command === 'pp' || command === 'getpic') {
+            const mentioned = msg.message.extendedTextMessage?.contextInfo?.mentionedJid;
+            const quotedJid = msg.message.extendedTextMessage?.contextInfo?.participant;
+            
+            let targetJid = msg.key.participant || msg.key.remoteJid; // Standard: Der Absender selbst
+            
+            if (mentioned && mentioned.length > 0) {
+                targetJid = mentioned[0];
+            } else if (quotedJid) {
+                targetJid = quotedJid;
+            }
+
+            try {
+                // Holt die URL des Profilbilds in maximaler Auflösung ('image')
+                const imgUrl = await sock.profilePictureUrl(targetJid, 'image');
+                
+                await sock.sendMessage(from, { 
+                    image: { url: imgUrl }, 
+                    caption: `🖼️ Hier ist das hochaufgelöste Profilbild von @${targetJid.split('@')[0]}`,
+                    mentions: [targetJid]
+                });
+            } catch (error) {
+                console.error("Fehler beim PP-Download:", error);
+                await sock.sendMessage(from, { text: '❌ Dieses Profilbild ist geschützt, existiert nicht oder kann nicht geladen werden.' });
+            }
+        }
     });
 }
 
