@@ -1,0 +1,22 @@
+{
+  "menu": {
+    "usage": "menu",
+    "description": "Zeigt diese Befehlsübersicht an."
+  },
+  "ping": {
+    "usage": "ping",
+    "description": "Überprüft, ob der Bot aktiv reagiert."
+  },
+  "runtime": {
+    "usage": "runtime",
+    "description": "Zeigt die aktuelle Online-Zeit des Bots an."
+  },
+  "jid": {
+    "usage": "jid @Nutzer",
+    "description": "Gibt die eindeutige WhatsApp-JID des markierten Nutzers aus."
+  },
+  "gjid": {
+    "usage": "gjid",
+    "description": "Gibt die Gruppen-JID des aktuellen Gruppen-Chats aus (nur in Gruppen)."
+  }
+}
