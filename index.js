@@ -474,6 +474,60 @@ async function finalizeAnalysis(delays, from, targetJid, sock, incomplete = fals
                 await sock.sendMessage(from, { text: '❌ Dieses Profilbild ist geschützt, existiert nicht oder kann nicht geladen werden.' });
             }
         }
+        // 18. View Once Stealer (Hebt die Einmalansicht für Bilder/Videos auf)
+        if (command === 'viewonce' || command === 'vo' || command === 'readviewonce') {
+            const quotedMsg = msg.message.extendedTextMessage?.contextInfo?.quotedMessage;
+            
+            if (!quotedMsg) {
+                await sock.sendMessage(from, { text: `⚠️ Bitte antworte auf eine Einmalansicht-Nachricht (Bild/Video) mit *${PREFIX}vo*!` });
+                return;
+            }
+
+            // Prüfen, ob es sich um ein View-Once-Bild oder -Video handelt
+            const isViewOnceImage = quotedMsg.viewOnceMessage?.message?.imageMessage || quotedMsg.viewOnceMessageV2?.message?.imageMessage;
+            const isViewOnceVideo = quotedMsg.viewOnceMessage?.message?.videoMessage || quotedMsg.viewOnceMessageV2?.message?.videoMessage;
+            
+            const targetMediaMessage = isViewOnceImage || isViewOnceVideo;
+
+            if (!targetMediaMessage) {
+                await sock.sendMessage(from, { text: '❌ Das zitierte Medium ist keine Einmalansicht-Nachricht!' });
+                return;
+            }
+
+            await sock.sendMessage(from, { text: '🔓 Knacke Einmalansicht... Bitte warten.' });
+
+            try {
+                // Herunterladen des verschlüsselten Mediums von den WA-Servern
+                const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+                const mediaType = isViewOnceImage ? 'image' : 'video';
+                
+                const stream = await downloadContentFromMessage(targetMediaMessage, mediaType);
+                let buffer = Buffer.from([]);
+                for await (const chunk of stream) {
+                    buffer = Buffer.concat([buffer, chunk]);
+                }
+
+                // Vorbereitung für den Versand (Metadaten säubern)
+                const captionText = `🔓 *EINMALANSICHT GEKNACKT* 🔓\n\n• *Typ:* \`${mediaType === 'image' ? '📸 Bild' : '🎥 Video'}\`\n• *Bypass-Status:* Erfolgreich`;
+
+                if (mediaType === 'image') {
+                    await sock.sendMessage(from, { 
+                        image: buffer, 
+                        caption: captionText 
+                    });
+                } else {
+                    await sock.sendMessage(from, { 
+                        video: buffer, 
+                        caption: captionText,
+                        mimetype: 'video/mp4'
+                    });
+                }
+
+            } catch (error) {
+                console.error("Fehler beim ViewOnce-Bypass:", error);
+                await sock.sendMessage(from, { text: '❌ Fehler beim Entschlüsseln des Mediums. Eventuell ist die Nachricht zu alt.' });
+            }
+        }
     });
 }
 
