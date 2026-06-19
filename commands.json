@@ -10,4 +10,5 @@
   "checkdevice": {"usage": "checkdevice","description": "*Experimentell*:Versucht das Gerät der getaggten Person zu identifizieren."},
   "device": {"usage": "device","description": "*Experimentell*:Versucht das Gerät der getaggten Person zu identifizieren."}
   "bancheck": {"usage": "bancheck [Nummer mit Ländervorwahl]", "description": "Prüft, ob eine Nummer von WhatsApp gebannt wurde." }
+	"pp": { "usage": "pp @Nutzer", "description": "Extrahiert und sendet das Profilbild eines Nutzers in voller Auflösung." }
 }
