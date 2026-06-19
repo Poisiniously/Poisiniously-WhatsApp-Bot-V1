@@ -19,4 +19,8 @@
     "usage": "gjid",
     "description": "Gibt die Gruppen-JID des aktuellen Gruppen-Chats aus (nur in Gruppen)."
   }
+  "hidetag": {
+    "usage": "hidetag [Nachricht]",
+    "description": "Markiert alle Gruppenmitglieder mit einer Nachricht."
+  }
 }
