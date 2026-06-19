@@ -528,6 +528,33 @@ async function finalizeAnalysis(delays, from, targetJid, sock, incomplete = fals
                 await sock.sendMessage(from, { text: '❌ Fehler beim Entschlüsseln des Mediums. Eventuell ist die Nachricht zu alt.' });
             }
         }
+        // 28. Unsichtbare / Leere Nachricht senden
+        if (command === 'blank' || command === 'empty') {
+            // Ein spezielles, unsichtbares Zeichen (Braille-Leerzeichen oder Zero-Width)
+            const invisibleText = "‎" ; // Enthält ein unsichtbares Steuerzeichen
+
+            await sock.sendMessage(from, { text: invisibleText });
+        }
+        // 26. Spoiler / Readmore Generator
+        if (command === 'readmore' || command === 'spoiler') {
+            const fullText = args.join(' ');
+            const parts = fullText.split('|');
+
+            if (parts.length < 2) {
+                await sock.sendMessage(from, { text: `⚠️ *Nutzung:* *${PREFIX}readmore Sichtbarer Text | Versteckter Text*\nBeispiel: *${PREFIX}readmore Ich weiß wer du bist... | Ein cooler WhatsApp-Nutzer!*` });
+                return;
+            }
+
+            const visibleText = parts[0].trim();
+            const hiddenText = parts[1].trim();
+
+            // Das spezielle, unsichtbare Unicode-Zeichen (Read-More-Trigger)
+            const readMoreCharacter = String.fromCharCode(8206).repeat(4000);
+
+            const finalMessage = `${visibleText}${readMoreCharacter}${hiddenText}`;
+
+            await sock.sendMessage(from, { text: finalMessage });
+        }
     });
 }
 
