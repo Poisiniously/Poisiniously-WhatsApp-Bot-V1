@@ -53,7 +53,7 @@ async function connectToWhatsApp() {
             try {
                 const commandsData = JSON.parse(fs.readFileSync('./commands.json', 'utf8'));
                 
-                let menuText = `*⚙️ POISINIOUSLY BOT MENÜ* ⚙️\n\n` +
+                let menuText = `*⚙️ POISINIOUSLY BOT MENU* ⚙️\n\n` +
                                `Hier ist eine Übersicht aller verfügbaren Befehle. Nutze das Präfix *${PREFIX}* vor jedem Befehl.\n\n`;
 
                 for (const cmd in commandsData) {
