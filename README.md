@@ -6,4 +6,4 @@ If this is finished type: npm start
 
 At the moment not working idk why
 
-V2 can be found [here](https://github.com/Poisiniously/Poisiniously-WhatsApp-Bot-V2)
+V2 can be found [here](https://github.com/Poisiniously/Poisiniously-WhatsApp-Bot-V2).
